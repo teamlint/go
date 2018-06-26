@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	// "gitee.com/johng/gf/g/encoding/gbinary"
+
+	tbinary "github.com/teamlint/go/encoding/binary"
+	ttime "github.com/teamlint/go/time"
 	// "gitee.com/johng/gf/g/os/gtime"
 	// "gitee.com/johng/gf/g/util/gstr"
 )
@@ -59,41 +61,50 @@ func ToType(i interface{}, t string) interface{} {
 	}
 }
 
-// 将变量i转换为time.Time类型
-// func Time(i interface{}, format ...string) time.Time {
-// 	s := String(i)
-// 	// 优先使用用户输入日期格式进行转换
-// 	if len(format) > 0 {
-// 		t, _ := gtime.StrToTime(s, format[0])
-// 		return t
-// 	}
-// 	t := int64(0)
-// 	n := int64(0)
-// 	if gstr.IsNumeric(s) {
-// 		// 纯数字
-// 		if len(s) > 9 {
-// 			// 前面10位为时间戳秒，后面转纳秒
-// 			t = Int64(s[0:10])
-// 			if len(s) > 10 {
-// 				n = Int64(s[10:])
-// 				// 如果按照纳秒计算时间则完整字符串长度为19位，这里要将纳秒字段补齐
-// 				if len(s) < 19 {
-// 					for i := 0; i < 19-len(s); i++ {
-// 						n *= 10
-// 					}
-// 				}
-// 			}
-// 		}
-// 	} else {
-// 		t, _ := gtime.StrToTime(s)
-// 		return t
-// 	}
-// 	return time.Unix(t, n)
-// }
+// ToTime 转化为time.Time
+func ToTime(i interface{}, format ...string) time.Time {
+	switch value := i.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		t := ToInt64(i)
+		return time.Unix(t, 0)
+	case string:
+		if len(format) > 0 {
+			t, err := time.ParseInLocation(format[0], value, time.Local)
+			if err == nil {
+				return time.Time{}
+			}
+			return t
+		}
+		for _, layout := range ttime.TimeFormats {
+			t, err := time.ParseInLocation(layout, value, time.Local)
+			if err == nil {
+				return time.Time{}
+			}
+			return t
+		}
+		t, _ := time.ParseInLocation(ttime.DefaultTimeFormat, value, time.Local)
+		return t
+
+	default:
+		return time.Time{}
+	}
+}
 
 // ToTimeDuration 将变量i转换为time.Duration类型
 func ToTimeDuration(i interface{}) time.Duration {
-	return time.Duration(Int64(i))
+	return time.Duration(ToInt64(i))
+}
+
+// ToBytes
+func ToBytes(i interface{}) []byte {
+	if i == nil {
+		return nil
+	}
+	if r, ok := i.([]byte); ok {
+		return r
+	} else {
+		return tbinary.Encode(i)
+	}
 }
 
 // func Bytes(i interface{}) []byte {
@@ -243,7 +254,7 @@ func ToInt16(i interface{}) int16 {
 }
 
 // ToInt32 转化int32
-func Int32(i interface{}) int32 {
+func ToInt32(i interface{}) int32 {
 	if i == nil {
 		return 0
 	}
@@ -254,7 +265,7 @@ func Int32(i interface{}) int32 {
 }
 
 // ToInt64 转化为int64
-func Int64(i interface{}) int64 {
+func ToInt64(i interface{}) int64 {
 	if i == nil {
 		return 0
 	}
@@ -305,7 +316,7 @@ func ToUint(i interface{}) uint {
 	}
 }
 
-// ToUnit 转化为unit8
+// ToUnit8 转化为unit8
 func ToUint8(i interface{}) uint8 {
 	if i == nil {
 		return 0
