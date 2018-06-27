@@ -1,12 +1,16 @@
-// Package convert 类型转化
-package convert
+// Copyright 2018 The Teamlint Authors. All rights reserved.
+// Use of this source code is governed by a MIT
+// license that can be found in the LICENSE file.
+// You can obtain one at https://github.com/teamlint/go.
 
-// 初始版本协议
 // Copyright 2017 gf Author(https://gitee.com/johng/gf). All Rights Reserved.
 //
 // This Source Code Form is subject to the terms of the MIT License.
 // If a copy of the MIT was not distributed with this file,
 // You can obtain one at https://gitee.com/johng/gf.
+
+// Package convert 类型转化
+package convert
 
 import (
 	"fmt"
@@ -15,8 +19,6 @@ import (
 
 	tbinary "github.com/teamlint/go/encoding/binary"
 	ttime "github.com/teamlint/go/time"
-	// "gitee.com/johng/gf/g/os/gtime"
-	// "gitee.com/johng/gf/g/util/gstr"
 )
 
 // ToType 将变量i转换为字符串指定的类型t
@@ -68,23 +70,25 @@ func ToTime(i interface{}, format ...string) time.Time {
 		t := ToInt64(i)
 		return time.Unix(t, 0)
 	case string:
+		var t time.Time
+		var err error
 		if len(format) > 0 {
-			t, err := time.ParseInLocation(format[0], value, time.Local)
+			t, err = time.ParseInLocation(format[0], value, time.Local)
 			if err == nil {
 				return time.Time{}
 			}
 			return t
 		}
 		for _, layout := range ttime.TimeFormats {
-			t, err := time.ParseInLocation(layout, value, time.Local)
+			t, err = time.ParseInLocation(layout, value, time.Local)
 			if err == nil {
-				return time.Time{}
+				break
 			}
-			return t
 		}
-		t, _ := time.ParseInLocation(ttime.DefaultTimeFormat, value, time.Local)
+		if err != nil {
+			return time.Time{}
+		}
 		return t
-
 	default:
 		return time.Time{}
 	}
@@ -95,28 +99,16 @@ func ToTimeDuration(i interface{}) time.Duration {
 	return time.Duration(ToInt64(i))
 }
 
-// ToBytes
+// ToBytes 转化为[]byte
 func ToBytes(i interface{}) []byte {
 	if i == nil {
 		return nil
 	}
 	if r, ok := i.([]byte); ok {
 		return r
-	} else {
-		return tbinary.Encode(i)
 	}
+	return tbinary.Encode(i)
 }
-
-// func Bytes(i interface{}) []byte {
-// 	if i == nil {
-// 		return nil
-// 	}
-// 	if r, ok := i.([]byte); ok {
-// 		return r
-// 	} else {
-// 		return gbinary.Encode(i)
-// 	}
-// }
 
 // ToString 基础的字符串类型转换
 func ToString(i interface{}) string {
@@ -316,7 +308,7 @@ func ToUint(i interface{}) uint {
 	}
 }
 
-// ToUnit8 转化为unit8
+// ToUint8 转化为uint8
 func ToUint8(i interface{}) uint8 {
 	if i == nil {
 		return 0
@@ -327,7 +319,7 @@ func ToUint8(i interface{}) uint8 {
 	return uint8(ToUint(i))
 }
 
-// ToUnit16 转化为unit16
+// ToUint16 转化为uint16
 func ToUint16(i interface{}) uint16 {
 	if i == nil {
 		return 0
@@ -338,6 +330,7 @@ func ToUint16(i interface{}) uint16 {
 	return uint16(ToUint(i))
 }
 
+// ToUint32 转化为uint32
 func ToUint32(i interface{}) uint32 {
 	if i == nil {
 		return 0
@@ -348,6 +341,7 @@ func ToUint32(i interface{}) uint32 {
 	return uint32(ToUint(i))
 }
 
+// ToUint64 转化为uint64
 func ToUint64(i interface{}) uint64 {
 	if i == nil {
 		return 0
@@ -358,6 +352,7 @@ func ToUint64(i interface{}) uint64 {
 	return uint64(ToUint(i))
 }
 
+// ToFloat32 转化为float32
 func ToFloat32(i interface{}) float32 {
 	if i == nil {
 		return 0
@@ -369,6 +364,7 @@ func ToFloat32(i interface{}) float32 {
 	return float32(v)
 }
 
+// ToFloat64 转化为float64
 func ToFloat64(i interface{}) float64 {
 	if i == nil {
 		return 0
