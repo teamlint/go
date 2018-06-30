@@ -1,9 +1,9 @@
 // Copyright 2018 The Teamlint Authors. All rights reserved.
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
+// You can obtain one at https://github.com/teamlint/go.
 
 // Copyright 2017 gf Author(https://gitee.com/johng/gf). All Rights Reserved.
-//
 // This Source Code Form is subject to the terms of the MIT License.
 // If a copy of the MIT was not distributed with this file,
 // You can obtain one at https://gitee.com/johng/gf.
