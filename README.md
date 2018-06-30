@@ -1,4 +1,4 @@
-# go
+# gox
 go package extensions
 
 ## packages 
@@ -6,7 +6,10 @@ go package extensions
 常用类型转化
 ### encoding
 常用编码
-#### binary
+#### binaryx
 二进制编码
-### time
+### timex
 日期时间处理
+### web
+web 扩展
+

@@ -3,21 +3,26 @@
 // license that can be found in the LICENSE file.
 // you can obtain one at https://github.com/teamlint/go.
 
-// Package time 实现time常用操作
-package time
+// Package timex 实现time常用操作
+// 所有time类型使用local时区转化处理
+package timex
 
 import "time"
 
 const (
-	DefaultDatetimeFormat = "2006-01-02 15:04:05"
-	DefaultDateFormat     = "2006-01-02"
-	DefaultTimeFormat     = "15:04:05"
+	// DatetimeFormat 默认日期时间格式
+	DatetimeFormat = "2006-01-02 15:04:05"
+	// DateFormat 默认日期格式
+	DateFormat = "2006-01-02"
+	// TimeFormat 默认时间格式
+	TimeFormat = "15:04:05"
 )
 
 var (
+	// TimeFormats 时间格式列表
 	TimeFormats = []string{
-		"2006-01-02",
-		"2006-01-02 15:04:05",
+		DateFormat,
+		DatetimeFormat,
 		time.ANSIC,
 		time.UnixDate,
 		time.RubyDate,

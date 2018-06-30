@@ -8,8 +8,8 @@
 // If a copy of the MIT was not distributed with this file,
 // You can obtain one at https://gitee.com/johng/gf.
 
-// Package binary 二进制及byte操作
-package binary
+// Package binaryx 二进制及byte操作
+package binaryx
 
 import (
 	"bytes"

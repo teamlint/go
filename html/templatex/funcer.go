@@ -1,4 +1,4 @@
-package html
+package templatex
 
 // Funcer 模板函数接口
 type Funcer interface {

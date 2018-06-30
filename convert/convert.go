@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"time"
 
-	tbinary "github.com/teamlint/go/encoding/binary"
-	ttime "github.com/teamlint/go/time"
+	"github.com/teamlint/gox/encoding/binaryx"
+	"github.com/teamlint/gox/timex"
 )
 
 // ToType 将变量i转换为字符串指定的类型t
@@ -79,7 +79,7 @@ func ToTime(i interface{}, format ...string) time.Time {
 			}
 			return t
 		}
-		for _, layout := range ttime.TimeFormats {
+		for _, layout := range timex.TimeFormats {
 			t, err = time.ParseInLocation(layout, value, time.Local)
 			if err == nil {
 				break
@@ -107,7 +107,7 @@ func ToBytes(i interface{}) []byte {
 	if r, ok := i.([]byte); ok {
 		return r
 	}
-	return tbinary.Encode(i)
+	return binaryx.Encode(i)
 }
 
 // ToString 基础的字符串类型转换
