@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teamlint/lib"
+	"github.com/teamlint/gox/stringx"
+	"github.com/teamlint/gox/timex"
 )
 
 type EnumMethod = string
@@ -105,26 +106,26 @@ func TestFunc(t *testing.T) {
 	expectDate := "2018-03-30"
 	expectTime := "16:24:58"
 	dt, _ := time.Parse(layout, datetimeString)
-	actual := lib.DatetimeFormat(dt)
+	actual := timex.Format(dt)
 	if actual != expectDatetime {
 		t.Errorf("expect value:%v,actual value:%v", expectDatetime, actual)
 	}
 	t.Logf("actual value:%v", actual)
-	actual = lib.DateFormat(dt)
+	actual = timex.Format(dt, timex.DateFormat)
 	if actual != expectDate {
 		t.Errorf("expect value:%v,actual value:%v", expectDate, actual)
 	}
 	t.Logf("actual value:%v", actual)
-	actual = lib.TimeFormat(dt)
+	actual = timex.Format(dt, timex.TimeFormat)
 	if actual != expectTime {
 		t.Errorf("expect value:%v,actual value:%v", expectTime, actual)
 	}
 	t.Logf("actual value:%v", actual)
 
 	now := time.Now()
-	actual = lib.DatetimeFormat(&now, "2006/01/02 15H04:05")
+	actual = timex.Format(now, "2006/01/02 15H04:05")
 	t.Logf("actual value:%v", actual)
-	actual = lib.DatetimeFormat(nil, "2006/01/02 15H04:05", "no date")
+	actual = timex.Format(time.Time{}, "2006/01/02 15H04:05", "no date")
 	t.Logf("actual value:%v", actual)
 
 	actual = Year()
@@ -135,14 +136,14 @@ func TestFunc(t *testing.T) {
 	t.Logf("actual value:%v", actual)
 
 	actual = Month()
-	expectValue = "3"
+	expectValue = "7"
 	if actual != expectValue {
 		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
 	}
 	t.Logf("actual value:%v", actual)
 
 	actual = Day()
-	expectValue = "30"
+	expectValue = "2"
 	if actual != expectValue {
 		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
 	}
@@ -152,8 +153,8 @@ func TestEnum(t *testing.T) {
 	action := EnumActionNone
 	method := EnumMethodPost
 	foo := Foo{Name: "Foo结构", Age: 40, IsApproved: true}
-	t.Logf("[%v]action update:%s", action, lib.Text(action))
-	t.Logf("[%v]method post:%s", method, lib.Text(method))
-	t.Logf("[%v]struct:%s", foo, lib.Text(&foo))
+	t.Logf("[%v]action update:%s", action, stringx.Text(action))
+	t.Logf("[%v]method post:%s", method, stringx.Text(method))
+	t.Logf("[%v]struct:%s", foo, stringx.Text(&foo))
 
 }
