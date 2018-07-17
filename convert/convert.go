@@ -14,6 +14,7 @@ package convert
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"time"
@@ -378,6 +379,44 @@ func ToFloat64(i interface{}) float64 {
 	}
 	v, _ := strconv.ParseFloat(ToString(i), 64)
 	return v
+}
+
+// Round 四舍五入
+// prec 精度
+func Round(x float64, prec int) float64 {
+	if x == 0 {
+		return 0
+	}
+	if prec == 0 {
+		return math.Round(x)
+	}
+
+	pow := math.Pow10(prec)
+	intermed := x * pow
+	if math.IsInf(intermed, 0) {
+		return x
+	}
+
+	return math.Round(intermed) / pow
+}
+
+// RoundInt 四舍五入到整数
+// prec 精度,根据精度位数转到相应整数
+func RoundInt(x float64, prec int) int {
+	if x == 0 {
+		return 0
+	}
+	if prec == 0 {
+		return int(math.Round(x))
+	}
+
+	pow := math.Pow10(prec)
+	intermed := x * pow
+	if math.IsInf(intermed, 0) {
+		return int(x)
+	}
+
+	return int(math.Round(intermed))
 }
 
 // MapToStruct 将map键值对映射到对应的struct对象属性上，需要注意：
