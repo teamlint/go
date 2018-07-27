@@ -2,6 +2,8 @@
 package events
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"reflect"
 	"sync"
@@ -12,12 +14,16 @@ const (
 	Version = "0.1"
 	// DefaultMaxListeners 每个事件最大监听器数量
 	DefaultMaxListeners = 0
-	// EnableWarning 允许警告信息,如果监听器数量达到设定值输出警告信息,默认false
-	EnableWarning = false
 )
 
+// EnableWarning 允许警告信息,如果监听器数量达到设定值输出警告信息,默认false
+var EnableWarning = false
+
+// ErrNoneFunction 不是有效的函数
+var ErrNoneFunction = errors.New("kind of value for listener is not function")
+
 // Listener 事件监听器
-type Listener func(...interface{})
+type Listener = interface{}
 
 // Emitter 事件管理接口
 type Emitter interface {
@@ -51,12 +57,19 @@ type Emitter interface {
 	Listeners(evt interface{}) []Listener
 	// Len 获取注册事件数量
 	Len() int
+	// Errors 获取事件管理器错误
+	Errors(evt ...interface{}) []error
+	// Error 获取事件管理器最后一个错误
+	Error(evt ...interface{}) error
+	// ClearErrors 清除事件管理器错误
+	ClearErrors(evt ...interface{})
 }
 
 type emitter struct {
 	mu           sync.Mutex
 	maxListeners int
-	events       map[interface{}][]Listener
+	events       map[interface{}][]reflect.Value
+	errors       map[interface{}][]error
 }
 
 var (
@@ -70,8 +83,9 @@ var (
 // New 创建新的事件管理器
 func New() Emitter {
 	e := new(emitter)
-	e.events = make(map[interface{}][]Listener)
+	e.events = make(map[interface{}][]reflect.Value)
 	e.maxListeners = DefaultMaxListeners
+	e.errors = make(map[interface{}][]error)
 	return e
 }
 
@@ -150,12 +164,35 @@ func Len() int {
 	return defaultEmitter.Len()
 }
 
+// Errors 获取事件管理器错误
+func Errors(evt ...interface{}) []error {
+	return defaultEmitter.Errors(evt...)
+}
+
+// Error 获取事件管理器最后一个错误
+func Error(evt ...interface{}) error {
+	return defaultEmitter.Error(evt...)
+}
+
+// ClearErrors 清除事件管理器错误
+func ClearErrors(evt ...interface{}) {
+	defaultEmitter.ClearErrors(evt...)
+}
+
 // 默认 Emitter 接口实现
 //==============================================================================
+
 // Emit 触发事件
 func (e *emitter) Emit(evt interface{}, arguments ...interface{}) Emitter {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatalf("Error: emit %v\n", err)
+		}
+	}()
+
+	e.ClearErrors(evt)
 	var (
-		listeners []Listener
+		listeners []reflect.Value
 		ok        bool
 	)
 	e.mu.Lock()
@@ -169,9 +206,9 @@ func (e *emitter) Emit(evt interface{}, arguments ...interface{}) Emitter {
 	wg.Add(len(listeners))
 
 	for _, fn := range listeners {
-		go func(l Listener) {
+		go func(l reflect.Value) {
 			defer wg.Done()
-			l(arguments...)
+			e.callFunc(evt, l, arguments...)
 		}(fn)
 	}
 	wg.Wait()
@@ -180,9 +217,8 @@ func (e *emitter) Emit(evt interface{}, arguments ...interface{}) Emitter {
 
 // EmitSync 同步触发事件
 func (e *emitter) EmitSync(evt interface{}, arguments ...interface{}) Emitter {
-
 	var (
-		listeners []Listener
+		listeners []reflect.Value
 		ok        bool
 	)
 	e.mu.Lock()
@@ -192,8 +228,8 @@ func (e *emitter) EmitSync(evt interface{}, arguments ...interface{}) Emitter {
 	}
 	e.mu.Unlock()
 
-	for _, l := range listeners {
-		l(arguments...)
+	for _, fn := range listeners {
+		e.callFunc(evt, fn, arguments...)
 	}
 
 	return e
@@ -214,23 +250,25 @@ func (e *emitter) On(evt interface{}, listener Listener) Emitter {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	fn := getFunc(listener)
 	if e.maxListeners > 0 && len(e.events[evt]) == e.maxListeners {
 		if EnableWarning {
 			log.Printf("Warning: event `%v` has exceeded the maximum number of listeners of %d.\n", evt, e.maxListeners)
 		}
 	}
 
-	e.events[evt] = append(e.events[evt], listener)
+	e.events[evt] = append(e.events[evt], fn)
 	return e
 }
 
 // Once 绑定一次性事件
 func (e *emitter) Once(evt interface{}, listener Listener) Emitter {
-	var run Listener
+	fn := getFunc(listener)
 
+	var run Listener
 	run = func(arguments ...interface{}) {
 		defer e.Off(evt, run)
-		listener(arguments...)
+		e.callFunc(evt, fn, arguments...)
 	}
 
 	e.On(evt, run)
@@ -242,12 +280,11 @@ func (e *emitter) Off(evt interface{}, listener Listener) Emitter {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	newListeners := []Listener{}
+	fn := reflect.ValueOf(listener)
+	newListeners := []reflect.Value{}
 	if listeners, ok := e.events[evt]; ok {
-		listenerPointer := reflect.ValueOf(listener).Pointer()
 		for _, l := range listeners {
-			itemPointer := reflect.ValueOf(l).Pointer()
-			if itemPointer != listenerPointer {
+			if l.Pointer() != fn.Pointer() {
 				newListeners = append(newListeners, l)
 			}
 		}
@@ -275,7 +312,7 @@ func (e *emitter) Clear() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	e.events = map[interface{}][]Listener{}
+	e.events = map[interface{}][]reflect.Value{}
 }
 
 // SetMaxListeners 设置事件最大监听器数量
@@ -326,14 +363,137 @@ func (e *emitter) Listeners(evt interface{}) []Listener {
 	defer e.mu.Unlock()
 
 	if listeners, ok := e.events[evt]; ok {
-		return listeners
+		var returnListeners []interface{}
+		for _, listener := range listeners {
+			returnListeners = append(returnListeners, listener.Interface())
+		}
+		return returnListeners
 	}
 
 	return nil
 }
 
+// Len 获取事件数量
 func (e *emitter) Len() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return len(e.events)
+}
+
+// Errors 获取事件管理器错误
+func (e *emitter) Errors(evts ...interface{}) []error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	var errs []error
+	evtLen := len(evts)
+	if evtLen > 0 {
+		for i := 0; i < evtLen; i++ {
+			errs = append(errs, e.errors[evts[i]]...)
+		}
+	} else {
+		for k := range e.events {
+			if item, ok := e.errors[k]; ok {
+				errs = append(errs, item...)
+			}
+		}
+	}
+
+	return errs
+}
+
+// Error 获取事件管理器最后一个错误
+func (e *emitter) Error(evt ...interface{}) error {
+	errs := e.Errors()
+	elen := len(errs)
+	if elen > 0 {
+		return errs[elen-1]
+	}
+	return nil
+}
+
+// ClearErrors 清除事件管理器错误
+func (e *emitter) ClearErrors(evts ...interface{}) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	evtLen := len(evts)
+	if evtLen > 0 {
+		for i := 0; i < evtLen; i++ {
+			e.errors[evts[i]] = nil
+		}
+		return
+	}
+	e.errors = map[interface{}][]error{}
+}
+
+// getFunc 获取监听器函数
+func getFunc(listener interface{}) reflect.Value {
+	fn := reflect.ValueOf(listener)
+
+	if reflect.Func != fn.Kind() {
+		if EnableWarning {
+			log.Printf("[events] error: %v\n", ErrNoneFunction.Error())
+		}
+		panic(ErrNoneFunction)
+	}
+
+	return fn
+}
+
+// callFunc 调用函数
+func (e *emitter) callFunc(evt interface{}, fn reflect.Value, arguments ...interface{}) {
+	defer e.recovery(evt)
+
+	var values []reflect.Value
+	for i := 0; i < len(arguments); i++ {
+		if arguments[i] == nil {
+			values = append(values, reflect.New(fn.Type().In(i)).Elem())
+		} else {
+			values = append(values, reflect.ValueOf(arguments[i]))
+		}
+	}
+
+	fnArgNum := fn.Type().NumIn()
+	fnOutNum := fn.Type().NumOut()
+	if EnableWarning {
+		log.Printf("[%v]fnArgNum:%v", fn.Type(), fnArgNum)
+	}
+
+	// func actual argumnets
+	var fnArguments []reflect.Value
+
+	if fn.Type().IsVariadic() {
+		fnArguments = values
+		// fn.Call(values)
+	} else {
+		fnArguments = values[:fnArgNum]
+	}
+	// only support return one error type parameter
+	if fnOutNum > 0 {
+		out := fn.Call(fnArguments)[0]
+		if !out.IsNil() {
+			if err, ok := out.Interface().(error); ok {
+				e.addError(evt, err)
+			}
+		}
+		return
+	}
+	fn.Call(fnArguments)
+}
+func (e *emitter) recovery(evt interface{}) {
+	if r := recover(); r != nil {
+		if EnableWarning {
+			log.Printf("[events] '%v' event recovered %v\n", evt, r)
+		}
+		err := errors.New(fmt.Sprintf("%v", r))
+		e.addError(evt, err)
+	}
+}
+func (e *emitter) addError(evt interface{}, err error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	errs := e.errors[evt]
+	e.errors[evt] = append(errs, err)
 }

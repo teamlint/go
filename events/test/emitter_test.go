@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/teamlint/gox/events"
 )
 
-var testEvents = map[interface{}][]Listener{
-	"user_created": []Listener{
+var testEvents = map[interface{}][]events.Listener{
+	"user_created": []events.Listener{
 		func(payload ...interface{}) {
 			fmt.Printf("A new User just created!\n")
 		},
@@ -17,14 +18,14 @@ var testEvents = map[interface{}][]Listener{
 			fmt.Printf("A new User just created, *from second event listener\n")
 		},
 	},
-	"user_joined": []Listener{
+	"user_joined": []events.Listener{
 		func(payload ...interface{}) {
 			user := payload[0].(string)
 			room := payload[1].(string)
 			fmt.Printf("%s joined to room: %s\n", user, room)
 		},
 	},
-	"user_left": []Listener{func(payload ...interface{}) {
+	"user_left": []events.Listener{func(payload ...interface{}) {
 		user := payload[0].(string)
 		room := payload[1].(string)
 		fmt.Printf("%s left from the room: %s\n", user, room)
@@ -32,22 +33,22 @@ var testEvents = map[interface{}][]Listener{
 }
 
 func createUser(user string) {
-	EmitSync("user_created", user)
+	events.EmitSync("user_created", user)
 }
 
 func joinUserTo(user string, room string) {
-	EmitSync("user_joined", user, room)
+	events.EmitSync("user_joined", user, room)
 }
 
 func leaveFromRoom(user string, room string) {
-	EmitSync("user_left", user, room)
+	events.EmitSync("user_left", user, room)
 }
 
-func ExampleEvents() {
+func Example() {
 	// regiter our events to the default event emmiter
 	for evt, listeners := range testEvents {
 		for _, l := range listeners {
-			On(evt, l)
+			events.On(evt, l)
 		}
 	}
 	// On("user_joined", func(payload string) {
@@ -60,7 +61,7 @@ func ExampleEvents() {
 	createUser(user)
 	joinUserTo(user, room)
 	leaveFromRoom(user, room)
-
+	events.TriggerSync("evt", "gox")
 	// Output:
 	// A new User just created!
 	// A new User just created, *from second event listener
@@ -70,7 +71,7 @@ func ExampleEvents() {
 
 func TestEvents(t *testing.T) {
 	assert := assert.New(t)
-	e := New()
+	e := events.New()
 	expectedPayload := "this is my payload"
 
 	e.On("my_event", func(payload ...interface{}) {
@@ -103,61 +104,134 @@ func TestEvents(t *testing.T) {
 		t.Fatalf("Length of the listeners is: %d, while expecting: %d", e.ListenerCount("my_event"), 0)
 	}
 
-	// e.On("evt", func(name string, age int) {
-	// 	assert.Equal("john", name)
-	// 	assert.Equal(32, age)
-	// })
-	e.On("evt", func(name ...interface{}) {
-		assert.Equal("john", name[0].(string))
+	now := time.Now()
+	e.On("evt", func(name string, age int, created time.Time) {
+		assert.Equal("john", name)
+		assert.Equal(32, age)
+		assert.Equal(now, created)
+		t.Logf("name:%s\n", name)
+		t.Logf("age:%d\n", age)
+		t.Logf("created:%v\n", created)
+		t.Logf("---------------------------------\n")
 	})
-	// type Model struct {
-	// 	Username   string
-	// 	Age        int
-	// 	IsApproved bool
-	// 	CreatedAt  time.Time
-	// }
-	// user:=Model{Username:"john",Age:32,IsApproved:true,CreatedAt:time.Now()}
-	e.Trigger("evt", "john", 32, time.Now)
+	e.On("evt", func(args ...interface{}) {
+		name := args[0].(string)
+		age := args[1].(int)
+		created := args[2].(time.Time)
+		assert.Equal("john", args[0].(string))
+		t.Logf("name:%s\n", name)
+		t.Logf("age:%d\n", age)
+		t.Logf("created:%v\n", created)
+		t.Logf("---------------------------------\n")
+	})
+	e.On("evt", func(name string, age int) {
+		assert.Equal("john", name)
+		assert.Equal(32, age)
+		t.Logf("name:%s\n", name)
+		t.Logf("age:%d\n", age)
+		t.Logf("---------------------------------\n")
+	})
+	type Address struct {
+		UserID   int
+		Location string
+	}
+	type Model struct {
+		ID         int
+		Username   string
+		Age        int
+		Money      *float64
+		IsApproved bool
+		CreatedAt  time.Time
+		DeletedAt  *time.Time
+		Addresses  []*Address
+	}
+	deleted := now.Add(30 * time.Minute)
+	m := 1024.356
+	user := Model{ID: 1001, Username: "john", Money: &m, Age: 32, IsApproved: true, CreatedAt: time.Now(), DeletedAt: &deleted}
+	addresses := make([]*Address, 0)
+	add1 := Address{UserID: 1, Location: "beijing of china"}
+	add2 := Address{UserID: 2, Location: "hebei of china"}
+	addresses = append(addresses, &add1, &add2)
+
+	user.Addresses = addresses
+	e.On("evt", func(name string, age int, a time.Time, user Model) {
+		assert.Equal("john", name)
+		assert.Equal(32, age)
+		t.Logf("name:%s\n", name)
+		t.Logf("age:%d\n", age)
+		t.Logf("user.money:%v\n", *user.Money)
+		t.Logf("user:%+v\n", user)
+		for k, add := range user.Addresses {
+			t.Logf("user.addresses[%v]:%+v\n", k, add)
+		}
+		t.Logf("---------------------------------\n")
+	})
+
+	for i, v := range e.Listeners("evt") {
+		t.Logf("Listeners[%v]:%v\n", i, v)
+	}
+	e.Trigger("evt", "john", 32, now, user)
+	t.Logf("----------[event end]--------------------\n")
+	assert.Equal(4, e.ListenerCount("evt"))
+	e.Clear()
+	assert.Equal(0, e.Len())
 }
 
+func TestPanic(t *testing.T) {
+	// assert := assert.New(t)
+	e := events.New()
+
+	e.On("evt", func() {
+		t.Logf("none parameter function")
+		panic("panic error")
+	})
+	e.On("evt", func() {
+		t.Logf("22222222")
+	})
+	e.On("evt", func() {
+		t.Logf("33333333")
+	})
+	e.Trigger("evt")
+	e.Clear()
+
+}
 func TestEventsOnce(t *testing.T) {
 	// on default
-	Clear()
+	events.Clear()
 
 	var count = 0
-	Once("my_event", func(payload ...interface{}) {
+	events.Once("my_event", func(payload ...interface{}) {
 		if count > 0 {
 			t.Fatalf("Once's listener fired more than one time! count: %d", count)
 		}
 		count++
 	})
 
-	if l := ListenerCount("my_event"); l != 1 {
+	if l := events.ListenerCount("my_event"); l != 1 {
 		t.Fatalf("Real  event's listeners should be: %d but has: %d", 1, l)
 	}
 
-	if l := len(Listeners("my_event")); l != 1 {
+	if l := len(events.Listeners("my_event")); l != 1 {
 		t.Fatalf("Real  event's listeners (from Listeners) should be: %d but has: %d", 1, l)
 	}
 
 	for i := 0; i < 10; i++ {
-		Emit("my_event")
+		events.Emit("my_event")
 	}
 
-	if l := ListenerCount("my_event"); l > 0 {
+	if l := events.ListenerCount("my_event"); l > 0 {
 		t.Fatalf("Real event's listeners length count should be: %d but has: %d", 0, l)
 	}
 
-	if l := len(Listeners("my_event")); l > 0 {
+	if l := len(events.Listeners("my_event")); l > 0 {
 		t.Fatalf("Real event's listeners length count ( from Listeners) should be: %d but has: %d", 0, l)
 	}
 
 }
 
 func TestRemoveListener(t *testing.T) {
-	// on default
 	assert := assert.New(t)
-	e := New()
+	e := events.New()
 
 	var count = 0
 	listener := func(payload ...interface{}) {
@@ -186,4 +260,5 @@ func TestRemoveListener(t *testing.T) {
 	assert.Equal(1, e.ListenerCount("my_event"))
 
 	e.Emit("my_event")
+	e.Clear()
 }

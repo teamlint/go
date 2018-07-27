@@ -11,6 +11,9 @@ go package extensions
 #### binaryx
 二进制编码
 
+### events
+简单的事件管理器
+
 ### html
 #### dom
 ##### attr
