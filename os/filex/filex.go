@@ -203,6 +203,13 @@ func Copy(src string, dst string) error {
 	if err != nil {
 		return err
 	}
+	dir := Dir(dst)
+	if !Exists(dir) {
+		err := Mkdir(dir)
+		if err != nil {
+			return err
+		}
+	}
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
