@@ -189,6 +189,13 @@ func FormatSize(raw float64) string {
 
 // Move 文件移动/重命名
 func Move(src string, dst string) error {
+	dir := Dir(dst)
+	if !Exists(dir) {
+		err := Mkdir(dir)
+		if err != nil {
+			return err
+		}
+	}
 	return os.Rename(src, dst)
 }
 
