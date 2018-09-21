@@ -136,14 +136,28 @@ func TestFunc(t *testing.T) {
 	t.Logf("actual value:%v", actual)
 
 	actual = Month()
-	expectValue = "7"
+	expectValue = "9"
 	if actual != expectValue {
 		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
 	}
 	t.Logf("actual value:%v", actual)
 
 	actual = Day()
-	expectValue = "2"
+	expectValue = "21"
+	if actual != expectValue {
+		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
+	}
+	t.Logf("actual value:%v", actual)
+	// time pretty
+	actual = DatetimePretty(time.Now().AddDate(0, 0, -3))
+	expectValue = "3天前"
+	if actual != expectValue {
+		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
+	}
+	t.Logf("actual value:%v", actual)
+	dt = time.Now().AddDate(0, 0, -8)
+	actual = DatetimePretty(dt, "2006/01", "")
+	expectValue = timex.Format(dt, "2006/01")
 	if actual != expectValue {
 		t.Errorf("expect value:%v,actual value:%v", expectValue, actual)
 	}

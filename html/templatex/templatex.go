@@ -7,6 +7,7 @@ import (
 
 // AddFuncs 添加模板方法
 func AddFuncs(funcer Funcer) {
+	funcer.AddFunc("datetimePretty", DatetimePretty)
 	funcer.AddFunc("datetimeFormat", DatetimeFormat)
 	funcer.AddFunc("dateFormat", DateFormat)
 	funcer.AddFunc("timeFormat", TimeFormat)
