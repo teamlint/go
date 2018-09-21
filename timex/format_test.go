@@ -48,14 +48,23 @@ func TestPretty(t *testing.T) {
 		{name: "MonthAgo", t: time.Now().AddDate(0, -1, 0), want: Format(time.Now().AddDate(0, -1, 0))},
 		{name: "Year", t: time.Now().AddDate(50, 0, 0), want: Format(time.Now().AddDate(50, 0, 0))},
 		{name: "YearAgo", t: time.Now().AddDate(-2, 0, 0), want: Format(time.Now().AddDate(-2, 0, 0))},
+		{name: "OvertimeFormatter", t: time.Now().AddDate(0, 10, 0), want: Format(time.Now().AddDate(0, 10, 0), "2006/01/02")},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTimeSince := Pretty(tt.t)
-			t.Logf("Pretty() = %v, want %v", gotTimeSince, tt.want)
-			if gotTimeSince != tt.want {
-				t.Errorf("Pretty() = %v, want %v", gotTimeSince, tt.want)
+			if tt.name == "OvertimeFormatter" {
+				gotTimeSince := Pretty(tt.t, "2006/01/02")
+				t.Logf("PrettyWithFormatter() = %v, want %v", gotTimeSince, tt.want)
+				if gotTimeSince != tt.want {
+					t.Errorf("Pretty() = %v, want %v", gotTimeSince, tt.want)
+				}
+			} else {
+				gotTimeSince := Pretty(tt.t)
+				t.Logf("Pretty() = %v, want %v", gotTimeSince, tt.want)
+				if gotTimeSince != tt.want {
+					t.Errorf("Pretty() = %v, want %v", gotTimeSince, tt.want)
+				}
 			}
 		})
 	}

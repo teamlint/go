@@ -1,7 +1,6 @@
 package timex
 
 import (
-	"log"
 	"math"
 	"strconv"
 	"time"
@@ -84,12 +83,12 @@ var (
 )
 
 // Pretty 返回指定时间消逝时间字符串
-func Pretty(t time.Time) string {
-	return PrettyByLang(t, CHS)
+func Pretty(t time.Time, overtimeFormatter ...string) string {
+	return PrettyByLang(t, CHS, overtimeFormatter...)
 }
 
 // PrettyByLang 根据指定语言返回指定时间消逝时间字符串
-func PrettyByLang(t time.Time, lang Lang) (timeSince string) {
+func PrettyByLang(t time.Time, lang Lang, overtimeFormatter ...string) (timeSince string) {
 	timestamp := t.Unix()
 	now := time.Now().Unix()
 
@@ -107,22 +106,25 @@ func PrettyByLang(t time.Time, lang Lang) (timeSince string) {
 	default:
 		timeFormats = timeLapsesCHS
 	}
+	defaultFormatter := DatetimeFormat
+	if len(overtimeFormatter) > 0 {
+		defaultFormatter = overtimeFormatter[0]
+	}
 
 	for _, formatter := range timeFormats {
 		if timeElapsed < 0 {
 			if math.Abs(timeElapsed) >= 604800 {
-				return Format(t)
+				return Format(t, defaultFormatter)
 			}
 		}
 		if timeElapsed < formatter.Threshold {
 			timeSince = formatter.Handler(timeElapsed)
-			log.Println("format:", timeSince)
 			matched = true
 			break
 		}
 	}
 	if !matched {
-		return Format(t)
+		return Format(t, defaultFormatter)
 	}
 	return timeSince
 }
