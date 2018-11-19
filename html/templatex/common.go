@@ -1,8 +1,10 @@
 package templatex
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/url"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -10,6 +12,10 @@ import (
 	"github.com/teamlint/gox/html/dom/tag/pager"
 	"github.com/teamlint/gox/timex"
 )
+
+func recovery() {
+	recover()
+}
 
 // DatetimeFormat 日期时间格式化 // arg: 可包含三个参数 1、时间格式（time.Time或*time.Time) 2、格式化字符串(string) 3、空值时返回值字符串(string)
 func DatetimeFormat(v ...interface{}) string {
@@ -135,6 +141,11 @@ func URLDecode(uri string) string {
 	return u.String()
 }
 
+// URLEncode URL编码
+func URLEncode(s string) string {
+	return url.QueryEscape(s)
+}
+
 // Year 获取当前年度
 func Year() string {
 	return strconv.Itoa(time.Now().Year())
@@ -178,4 +189,66 @@ func Select(v interface{}, name string, selectOptions []tag.Option, attrs ...int
 // SelectOption 下拉列表项HTML文本
 func SelectOption(opt tag.Option) template.HTML {
 	return tag.SelectOption(opt)
+}
+
+// JSON
+func toJSON(v interface{}) string {
+	output, _ := json.Marshal(v)
+	return string(output)
+}
+
+// Length 数据长度
+func Lengh(value interface{}) int {
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+		return v.Len()
+	case reflect.String:
+		return len([]rune(v.String()))
+	}
+
+	return 0
+}
+func dfault(d interface{}, given ...interface{}) interface{} {
+	if empty(given) || empty(given[0]) {
+		return d
+	}
+	return given[0]
+}
+
+// empty returns true if the given value has the zero value for its type.
+func empty(given interface{}) bool {
+	g := reflect.ValueOf(given)
+	if !g.IsValid() {
+		return true
+	}
+
+	// Basically adapted from text/template.isTrue
+	switch g.Kind() {
+	default:
+		return g.IsNil()
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.String:
+		return g.Len() == 0
+	case reflect.Bool:
+		return g.Bool() == false
+	case reflect.Complex64, reflect.Complex128:
+		return g.Complex() == 0
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return g.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return g.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return g.Float() == 0
+	case reflect.Struct:
+		return false
+	}
+}
+
+// iif 三元表达式
+func iif(yes, no interface{}, value bool) interface{} {
+	defer recovery()
+	if value {
+		return yes
+	}
+	return no
 }
