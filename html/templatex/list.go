@@ -2,7 +2,9 @@ package templatex
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
+	"time"
 
 	"github.com/teamlint/gox/convert"
 )
@@ -272,4 +274,21 @@ func slice(list interface{}, indices ...interface{}) interface{} {
 	default:
 		panic(fmt.Sprintf("list should be type of slice or array but %s", tp))
 	}
+}
+func random(value interface{}) interface{} {
+	defer recovery()
+
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	v := reflect.ValueOf(value)
+
+	switch v.Kind() {
+	case reflect.String:
+		str := []rune(v.String())
+		return string(str[rand.Intn(len(str))])
+	case reflect.Slice, reflect.Array:
+		return v.Index(rand.Intn(v.Len())).Interface()
+	}
+
+	return ""
 }

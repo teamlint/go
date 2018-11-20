@@ -66,6 +66,7 @@ func AddFuncs(funcer Funcer) {
 	funcer.AddFunc("without", without)
 	funcer.AddFunc("has", has)
 	funcer.AddFunc("slice", slice)
+	funcer.AddFunc("random", random)
 	// env
 	funcer.AddFunc("env", env)
 	funcer.AddFunc("expandenv", expandEnv)
