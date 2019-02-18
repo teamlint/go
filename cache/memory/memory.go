@@ -25,7 +25,7 @@ type memoryCache struct {
 	gcache          *gocache.Cache
 }
 
-func New(opt map[interface{}]interface{}) *memoryCache {
+func New(opt map[string]interface{}) *memoryCache {
 	if exp, ok := opt["DefaultExpiration"]; ok {
 		defaultExpiration = exp.(string)
 	}

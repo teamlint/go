@@ -28,7 +28,7 @@ type redisCache struct {
 }
 
 // New 创建redisCache实例
-func New(opt map[interface{}]interface{}) *redisCache {
+func New(opt map[string]interface{}) *redisCache {
 	setting := Config{}
 	if addr, ok := opt["Addr"]; ok {
 		setting.Addr = addr.(string)

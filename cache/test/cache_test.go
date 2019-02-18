@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/teamlint/gox/cache"
-	"github.com/teamlint/gox/cache/memory"
 )
 
 var caches cache.Cache
@@ -20,18 +19,19 @@ type Model struct {
 }
 
 func init() {
-	opt := map[interface{}]interface{}{
-		"Addr":              "127.0.0.1:6379",
-		"Password":          "",
-		"Database":          "",
-		"Prefix":            "",
-		"DefaultExpiration": "20m",
-		"CleanupInterval":   "30m",
-	}
-	log.Println("memory cache")
-	caches = memory.New(opt)
-	// log.Println("redis cache")
+	// opt := map[string]interface{}{
+	// 	"Addr":              "127.0.0.1:6379",
+	// 	"Password":          "",
+	// 	"Database":          "",
+	// 	"Prefix":            "",
+	// 	"DefaultExpiration": "20m",
+	// 	"CleanupInterval":   "30m",
+	// }
+	// log.Println("memory cache")
+	// caches = cache.New(cache.TypeMemory)
+	log.Println("redis cache")
 	// caches = redis.New(opt)
+	caches = cache.New(cache.TypeRedis)
 }
 func TestAll(t *testing.T) {
 	data := map[string]interface{}{
