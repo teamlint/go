@@ -79,7 +79,7 @@ func ToTime(i interface{}, format ...string) time.Time {
 		var err error
 		if len(format) > 0 {
 			t, err = time.ParseInLocation(format[0], value, time.Local)
-			if err == nil {
+			if err != nil {
 				return time.Time{}
 			}
 			return t
