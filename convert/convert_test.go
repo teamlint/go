@@ -52,3 +52,8 @@ func TestRoundInt(t *testing.T) {
 	}
 
 }
+func TestConvert(t *testing.T) {
+	timestr := "2016-11-30T12:15:53"
+	jsonTime := ToTime(timestr, "2006-01-02T15:04:05")
+	t.Log(jsonTime)
+}
