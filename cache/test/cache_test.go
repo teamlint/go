@@ -1,7 +1,6 @@
 package test
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -19,19 +18,15 @@ type Model struct {
 }
 
 func init() {
-	// opt := map[string]interface{}{
-	// 	"Addr":              "127.0.0.1:6379",
-	// 	"Password":          "",
-	// 	"Database":          "",
-	// 	"Prefix":            "",
-	// 	"DefaultExpiration": "20m",
-	// 	"CleanupInterval":   "30m",
-	// }
-	// log.Println("memory cache")
-	// caches = cache.New(cache.TypeMemory)
-	log.Println("redis cache")
-	// caches = redis.New(opt)
-	caches = cache.New(cache.TypeRedis)
+	opt := map[interface{}]interface{}{
+		"Addr":              "127.0.0.1:6379",
+		"Password":          "",
+		"Database":          "",
+		"Prefix":            "",
+		"DefaultExpiration": "20m",
+		"CleanupInterval":   "30m",
+	}
+	caches = cache.New(cache.TypeMemory, opt)
 }
 func TestAll(t *testing.T) {
 	data := map[string]interface{}{
@@ -91,12 +86,13 @@ func TestExp(t *testing.T) {
 	v := "this is a expiration test"
 	t.Logf("set key %v expiration %v\n", k, 2)
 	err := caches.Set(k, v, cache.DefaultExpiration)
+	// err := caches.Set(k, v, 3)
 	if err != nil {
 		t.Error(err)
 	} else {
 		t.Logf("set key %v success\n", k)
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 	val, err := caches.Get(k)
 	if err != nil {
 		t.Error(err)

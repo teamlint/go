@@ -31,12 +31,12 @@ const (
 )
 
 // New 创建指定类型缓存实例
-func New(t Type, opt ...map[string]interface{}) Cache {
-	option := make(map[string]interface{})
+func New(t Type, opt ...map[interface{}]interface{}) Cache {
+	option := make(map[interface{}]interface{})
 	switch t {
 	case TypeRedis:
 		fmt.Println("redis cache")
-		option = map[string]interface{}{
+		option = map[interface{}]interface{}{
 			"Addr":              "127.0.0.1:6379",
 			"Password":          "",
 			"Database":          "",
@@ -49,7 +49,7 @@ func New(t Type, opt ...map[string]interface{}) Cache {
 		return redis.New(option)
 	default:
 		fmt.Println("memory cache")
-		option = map[string]interface{}{
+		option = map[interface{}]interface{}{
 			"DefaultExpiration": "20m",
 			"CleanupInterval":   "30m",
 		}
