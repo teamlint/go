@@ -26,7 +26,8 @@ func init() {
 		"DefaultExpiration": "20m",
 		"CleanupInterval":   "30m",
 	}
-	caches = cache.New(cache.TypeMemory, opt)
+	// caches = cache.New(cache.TypeMemory, opt)
+	caches = cache.New(cache.TypeRedis, opt)
 }
 func TestAll(t *testing.T) {
 	data := map[string]interface{}{
@@ -100,4 +101,43 @@ func TestExp(t *testing.T) {
 		t.Logf("get key %v=%v\n", k, val)
 	}
 
+}
+func TestPatternDelete(t *testing.T) {
+	caches.Set("k-1", "k-1", cache.DefaultExpiration)
+	caches.Set("k-2", "k-2", cache.DefaultExpiration)
+	caches.Set("k-3", "k-3", cache.DefaultExpiration)
+	caches.Set("f-1", "f-1", cache.DefaultExpiration)
+	caches.Set("f-1-1", "f-1-1", cache.DefaultExpiration)
+	caches.Set("f-2", "f-2", cache.DefaultExpiration)
+	var err error
+	err = caches.PatternDelete("k-*")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log("behind PatternDelete")
+
+	var val interface{}
+
+	if val, err = caches.Get("k-1"); err != nil {
+		t.Error(err)
+	}
+	t.Log(val)
+	if val, err = caches.Get("k-2"); err != nil {
+		t.Error(err)
+	}
+	t.Log(val)
+	if val, err = caches.Get("k-3"); err != nil {
+		t.Error(err)
+	}
+	t.Log(val)
+	if val, err = caches.Get("f-1"); err != nil {
+		t.Error(err)
+	}
+	t.Log(val)
+	t.Log(val)
+	if val, err = caches.Get("f-1-1"); err != nil {
+		t.Error(err)
+	}
+	t.Log(val)
 }

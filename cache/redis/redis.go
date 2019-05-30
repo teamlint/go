@@ -213,3 +213,24 @@ func (r *redisCache) Delete(key string) error {
 	_, err := c.Do("DEL", r.Config.Prefix+key)
 	return err
 }
+
+// PatternDelete 模式删除
+func (r *redisCache) PatternDelete(pattern string) error {
+	c := r.pool.Get()
+	defer c.Close()
+	if c.Err() != nil {
+		return c.Err()
+	}
+	rkeys, err := c.Do("KEYS", r.Config.Prefix+pattern)
+	// ks, err := redigo.Strings(rkeys, err)
+	// log.Println(ks)
+	if err != nil {
+		return err
+	}
+	keys, ok := rkeys.([]interface{})
+	if !ok {
+		return ErrKeyNotFound
+	}
+	_, _ = c.Do("DEL", keys...)
+	return nil
+}

@@ -91,3 +91,9 @@ func (c *memoryCache) Delete(key string) error {
 	c.gcache.Delete(key)
 	return nil
 }
+
+// PatternDelete 模式删除,未实现,简单的删除所有缓存
+func (c *memoryCache) PatternDelete(pattern string) error {
+	c.gcache.Flush()
+	return nil
+}

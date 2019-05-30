@@ -20,6 +20,7 @@ type Cache interface {
 	Read(key string, outPtr interface{}) error
 	Set(key string, value interface{}, secondsLifetime int64) error
 	Delete(key string) error
+	PatternDelete(pattern string) error
 }
 
 // Type 缓存类型
