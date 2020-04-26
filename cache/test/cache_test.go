@@ -26,8 +26,8 @@ func init() {
 		"DefaultExpiration": "20m",
 		"CleanupInterval":   "30m",
 	}
-	// caches = cache.New(cache.TypeMemory, opt)
-	caches = cache.New(cache.TypeRedis, opt)
+	caches = cache.New(cache.TypeMemory, opt)
+	// caches = cache.New(cache.TypeRedis, opt)
 }
 func TestAll(t *testing.T) {
 	data := map[string]interface{}{
@@ -42,6 +42,11 @@ func TestAll(t *testing.T) {
 			Age:        36,
 			IsApproved: false,
 			CreateAt:   time.Now(),
+		},
+		"map": map[string]interface{}{
+			// "a":  "aaaa",
+			// "b":  "bbbbb",
+			// "st": &Model{Username: "struct1"},
 		},
 	}
 	t.Log("==============================")
