@@ -11,7 +11,7 @@ import (
 
 const (
 	// Version 版本号
-	Version = "0.1"
+	Version = "0.2"
 	// DefaultMaxListeners 每个事件最大监听器数量
 	DefaultMaxListeners = 0
 )
@@ -186,7 +186,7 @@ func ClearErrors(evt ...interface{}) {
 func (e *emitter) Emit(evt interface{}, arguments ...interface{}) Emitter {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatalf("Error: emit %v\n", err)
+			log.Fatalf("[events] emit error=%v\n", err)
 		}
 	}()
 
@@ -253,7 +253,7 @@ func (e *emitter) On(evt interface{}, listener Listener) Emitter {
 	fn := getFunc(listener)
 	if e.maxListeners > 0 && len(e.events[evt]) == e.maxListeners {
 		if EnableWarning {
-			log.Printf("Warning: event `%v` has exceeded the maximum number of listeners of %d.\n", evt, e.maxListeners)
+			log.Printf("[events] warning: event `%v` has exceeded the maximum number of listeners of %d.\n", evt, e.maxListeners)
 		}
 	}
 
@@ -322,7 +322,7 @@ func (e *emitter) SetMaxListeners(n int) Emitter {
 
 	if n < 0 {
 		if EnableWarning {
-			log.Printf("warning: MaxListeners must be positive number, tried to set: %d", n)
+			log.Printf("[events] warning: MaxListeners must be positive number, tried to set: %d", n)
 		}
 	}
 	e.maxListeners = n
@@ -445,30 +445,63 @@ func getFunc(listener interface{}) reflect.Value {
 func (e *emitter) callFunc(evt interface{}, fn reflect.Value, arguments ...interface{}) {
 	defer e.recovery(evt)
 
-	var values []reflect.Value
-	for i := 0; i < len(arguments); i++ {
-		if arguments[i] == nil {
-			values = append(values, reflect.New(fn.Type().In(i)).Elem())
+	// var values []reflect.Value = make([]reflect.Value, len(arguments))
+	// for i, v := range arguments {
+	// 	if v == nil {
+	// 		values[i] = reflect.New(fn.Type().In(i)).Elem()
+	// 	} else {
+	// 		values[i] = reflect.ValueOf(arguments[i])
+	// 	}
+	// }
+	var values map[int]reflect.Value = make(map[int]reflect.Value, len(arguments))
+	for i, v := range arguments {
+		if v == nil {
+			values[i] = reflect.New(fn.Type().In(i)).Elem()
 		} else {
-			values = append(values, reflect.ValueOf(arguments[i]))
+			values[i] = reflect.ValueOf(arguments[i])
 		}
 	}
 
 	fnArgNum := fn.Type().NumIn()
 	fnOutNum := fn.Type().NumOut()
 	if EnableWarning {
-		log.Printf("[%v]fnArgNum:%v", fn.Type(), fnArgNum)
+		log.Printf("[events] handler=%v, args.count=%v", fn.Type(), fnArgNum)
 	}
 
 	// func actual argumnets
-	var fnArguments []reflect.Value
+	var fnArguments []reflect.Value = make([]reflect.Value, fnArgNum)
 
+	log.Printf("arg.values=%v\n", values)
+	// variable args
 	if fn.Type().IsVariadic() {
-		fnArguments = values
-		// fn.Call(values)
+		variableArgs := make([]reflect.Value, len(values))
+		for i, v := range values {
+			variableArgs[i] = v
+		}
+		if len(variableArgs) > 0 {
+			fnArguments = variableArgs
+		}
+		for i, fa := range fnArguments {
+			if !fa.IsValid() {
+				fnArguments[i] = reflect.New(fn.Type().In(i)).Elem()
+			}
+		}
 	} else {
-		fnArguments = values[:fnArgNum]
+		for i := 0; i < fnArgNum; i++ {
+			if v, ok := values[i]; ok {
+				fnArguments[i] = v
+			} else {
+				fnArguments[i] = reflect.New(fn.Type().In(i)).Elem()
+			}
+		}
 	}
+	log.Printf("fn.argumnets=%v\n", fnArguments)
+	// if fn.Type().IsVariadic() {
+	// 	fnArguments = values
+	// 	// fn.Call(values)
+	// } else {
+	// 	fnArguments = values[:fnArgNum]
+	// }
 	// only support return one error type parameter
 	if fnOutNum > 0 {
 		out := fn.Call(fnArguments)[0]
@@ -484,7 +517,7 @@ func (e *emitter) callFunc(evt interface{}, fn reflect.Value, arguments ...inter
 func (e *emitter) recovery(evt interface{}) {
 	if r := recover(); r != nil {
 		if EnableWarning {
-			log.Printf("[events] '%v' event recovered %v\n", evt, r)
+			log.Printf("[events] recover '%v' event, %v\n", evt, r)
 		}
 		err := errors.New(fmt.Sprintf("%v", r))
 		e.addError(evt, err)

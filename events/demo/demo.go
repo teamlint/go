@@ -17,69 +17,92 @@ func main() {
 	events.EnableWarning = true
 	e := events.New()
 
-	e.On("evt", func() {
-		p("1111111")
-	})
+	// e.On("evt", func() {
+	// 	p("1111111")
+	// })
 	e.On("post", func() {
-		p("post func1 load")
+		p("post_handler func() noarg")
 	})
-	e.On("post", func() {
-		p("post func2 load")
-		panic("post func2 error")
-	})
-	e.On("post", func() error {
-		p("post 1 load,return error")
-		return ErrPost1
-	})
+	// e.On("post", func() {
+	// 	p("post func2 load")
+	// 	// panic("post func2 error")
+	// })
+	// e.On("post", func() error {
+	// 	p("post 1 load,return error")
+	// 	return ErrPost1
+	// })
 	e.On("post", func(msg string) error {
-		if e.Error() == ErrPost1 {
-			p("post 1 error->post2 process")
-			return nil
+		p("post_handler(string) arg=%v", msg)
+		return nil
+		// if e.Error() == ErrPost1 {
+		// 	p("post 1 error->post2 process")
+		// 	return nil
+		// }
+		// p("post 1 error(nil)->post2 process")
+		// return ErrPost2
+	})
+	e.On("post", func(msg string, foo string) error {
+		p("post_handler(string,string) arg1=%v,arg2=%v", msg, foo)
+		return nil
+	})
+	e.On("post", func(msg string, args ...interface{}) error {
+		p("post_handler variable argument.msg=%v\n", msg)
+		p("post_handler variable argument")
+		if len(args) > 0 {
+			for k, v := range args {
+				p("\targ[%v] = %v", k, v)
+			}
 		}
-		p("post 1 error(nil)->post2 process")
-		return ErrPost2
+		// return ErrPostVar
+		return nil
 	})
 	e.On("post", func(args ...interface{}) error {
-		p("variable argument")
-		return ErrPostVar
+		p("post_handler variable argument")
+		if len(args) > 0 {
+			for k, v := range args {
+				p("\targ[%v] = %v", k, v)
+			}
+		}
+		// return ErrPostVar
+		return nil
 	})
-	e.On("evt", func() {
-		p("22222222")
-		panic("222 error")
-	})
-	e.On("evt", func() {
-		p("33333333")
-	})
-	e.On("evt", func() {
-		p("5555555")
-		panic("5555 error")
-	})
-	p("evt listener count: %v", e.ListenerCount("evt"))
-	e.Emit("evt")
-	// e.Emit("post")
-	p("1 event all errors: %+v", e.Errors())
-	p("1 event last error: %+v", e.Error())
-	p("1 event post errors: %+v", e.Errors("post"))
-	p("1 event last post error: %+v", e.Error("post"))
-	e.On("evt", func() {
-		p("4444444")
-	})
+	// e.On("evt", func() {
+	// 	p("22222222")
+	// 	panic("222 error")
+	// })
+	// e.On("evt", func() {
+	// 	p("33333333")
+	// })
+	// e.On("evt", func() {
+	// 	p("5555555")
+	// 	panic("5555 error")
+	// })
+	p("evt listener count: %v", e.ListenerCount("post"))
+	// e.Emit("evt")
+	// p("1 event all errors: %+v", e.Errors())
+	// p("1 event last error: %+v", e.Error())
+	// p("1 event post errors: %+v", e.Errors("post"))
+	// p("1 event last post error: %+v", e.Error("post"))
+	// e.On("evt", func() {
+	// 	p("4444444")
+	// })
 	// e.ClearErrors()
 	// e.ClearErrors("evt")
-	// e.Emit("post", "gox")
+	// e.EmitSync("post")
 	e.EmitSync("post", "gox")
-	e.OffAll("evt")
-	p("2 event all errors: %+v", e.Errors())
-	p("2 event last error: %+v", e.Error())
-	p("2 event post errors: %+v", e.Errors("post"))
-	p("2 event last post error: %+v", e.Error("post"))
+	// e.EmitSync("post", "a1", "a2", 333, 4444)
+	// e.OffAll("evt")
+	// p("2 event all errors: %+v", e.Errors())
+	// p("2 event last error: %+v", e.Error())
+	// p("2 event post errors: %+v", e.Errors("post"))
+	// p("2 event last post error: %+v", e.Error("post"))
 	e.Clear()
 	p("main exit")
 }
 func p(msg string, args ...interface{}) {
 	if len(args) > 0 {
-		fmt.Printf(msg+"\n", args...)
+		fmt.Printf("[out] "+msg+"\n", args...)
 	} else {
-		fmt.Println(msg)
+		fmt.Println("[out] " + msg)
 	}
 }
