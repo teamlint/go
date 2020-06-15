@@ -3,8 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 
-	"github.com/teamlint/gox/events"
+	e "github.com/teamlint/gox/events"
 )
 
 var (
@@ -14,12 +15,15 @@ var (
 )
 
 func main() {
-	events.EnableWarning = true
-	e := events.New()
+	// events.EnableWarning = true
+	// e := events.New()
+	// e := events.Default()
 
 	// e.On("evt", func() {
+
 	// 	p("1111111")
 	// })
+	log.Printf("emiter=%p\n", e.Default())
 	e.On("post", func() {
 		p("post_handler func() noarg")
 	})
@@ -31,7 +35,8 @@ func main() {
 	// 	p("post 1 load,return error")
 	// 	return ErrPost1
 	// })
-	e.On("post", func(msg string) error {
+	e.Subscribe("post", func(msg string) error {
+		log.Printf("emiter=%p\n", e.Default())
 		p("post_handler(string) arg=%v", msg)
 		return nil
 		// if e.Error() == ErrPost1 {
@@ -46,7 +51,7 @@ func main() {
 		return nil
 	})
 	e.On("post", func(msg string, args ...interface{}) error {
-		p("post_handler variable argument.msg=%v\n", msg)
+		p("post_handler variable argument.msg=%v", msg)
 		p("post_handler variable argument")
 		if len(args) > 0 {
 			for k, v := range args {
@@ -88,9 +93,10 @@ func main() {
 	// })
 	// e.ClearErrors()
 	// e.ClearErrors("evt")
-	// e.EmitSync("post")
+	e.EmitSync("post")
 	e.EmitSync("post", "gox")
-	// e.EmitSync("post", "a1", "a2", 333, 4444)
+	e.Publish("post", "a1", "a2", 333, 4444)
+	e.PublishSync("post", "a1a", 2222, 333, 4444)
 	// e.OffAll("evt")
 	// p("2 event all errors: %+v", e.Errors())
 	// p("2 event last error: %+v", e.Error())

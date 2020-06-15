@@ -35,14 +35,26 @@ type Emitter interface {
 	Trigger(evt interface{}, arguments ...interface{}) Emitter
 	// TriggerSync EmitSync 同步触发事件别名
 	TriggerSync(evt interface{}, arguments ...interface{}) Emitter
+	// Publish 发布事件 Emit 别名
+	Publish(evt interface{}, arguments ...interface{}) Emitter
+	// PublishSync EmitSync 同步触发事件别名
+	PublishSync(evt interface{}, arguments ...interface{}) Emitter
 	// On 注册事件监听器
 	On(evt interface{}, listener Listener) Emitter
+	// Subscribe 订阅事件 On 别名
+	Subscribe(evt interface{}, listener Listener) Emitter
 	// Once 注册一次性事件监听器
 	Once(evt interface{}, listener Listener) Emitter
+	// SubscribeOnce 订阅一次性事件
+	SubscribeOnce(evt interface{}, listener Listener) Emitter
 	// Off 移除指定事件监听器
 	Off(evt interface{}, listener Listener) Emitter
+	// Unsubscribe 取消订阅
+	Unsubscribe(evt interface{}, listener Listener) Emitter
 	// Off 移除指定事件所有监听器
 	OffAll(evt interface{}) Emitter
+	// UnsubscribeAll 移除指定事件所有监听器
+	UnsubscribeAll(evt interface{}) Emitter
 	// Clear 清除所有事件及监听器
 	Clear()
 	// SetMaxListeners 设置事件监听器最大数量,0 无限制
@@ -88,6 +100,9 @@ func New() Emitter {
 	e.errors = make(map[interface{}][]error)
 	return e
 }
+func Default() Emitter {
+	return defaultEmitter
+}
 
 // Emit 触发事件
 func Emit(evt interface{}, arguments ...interface{}) Emitter {
@@ -109,6 +124,16 @@ func TriggerSync(evt interface{}, arguments ...interface{}) Emitter {
 	return defaultEmitter.EmitSync(evt, arguments...)
 }
 
+// Publish 发布事件
+func Publish(evt interface{}, arguments ...interface{}) Emitter {
+	return defaultEmitter.Emit(evt, arguments...)
+}
+
+// PublishSync 同步触发事件
+func PublishSync(evt interface{}, arguments ...interface{}) Emitter {
+	return defaultEmitter.EmitSync(evt, arguments...)
+}
+
 // On 绑定事件
 func On(evt interface{}, listener Listener) Emitter {
 	return defaultEmitter.On(evt, listener)
@@ -119,6 +144,16 @@ func Once(evt interface{}, listener Listener) Emitter {
 	return defaultEmitter.Once(evt, listener)
 }
 
+// Subscribe 订阅事件
+func Subscribe(evt interface{}, listener Listener) Emitter {
+	return defaultEmitter.On(evt, listener)
+}
+
+// SubscribeOnce 订阅一次性事件
+func SubscribeOnce(evt interface{}, listener Listener) Emitter {
+	return defaultEmitter.Once(evt, listener)
+}
+
 // Off 移除指定事件监听器
 func Off(evt interface{}, listener Listener) Emitter {
 	return defaultEmitter.Off(evt, listener)
@@ -126,6 +161,16 @@ func Off(evt interface{}, listener Listener) Emitter {
 
 // OffAll 移除指定事件所有监听器
 func OffAll(evt interface{}) Emitter {
+	return defaultEmitter.OffAll(evt)
+}
+
+// Unsubscribe 移除指定事件监听器
+func Unsubscribe(evt interface{}, listener Listener) Emitter {
+	return defaultEmitter.Off(evt, listener)
+}
+
+// UnsubscribeAll 移除指定事件所有监听器
+func UnsubscribeAll(evt interface{}) Emitter {
 	return defaultEmitter.OffAll(evt)
 }
 
@@ -245,6 +290,16 @@ func (e *emitter) TriggerSync(evt interface{}, arguments ...interface{}) Emitter
 	return e.EmitSync(evt, arguments...)
 }
 
+// Publish 触发事件
+func (e *emitter) Publish(evt interface{}, arguments ...interface{}) Emitter {
+	return e.Emit(evt, arguments...)
+}
+
+// PublishSync 同步触发事件
+func (e *emitter) PublishSync(evt interface{}, arguments ...interface{}) Emitter {
+	return e.EmitSync(evt, arguments...)
+}
+
 // On 绑定事件监听器
 func (e *emitter) On(evt interface{}, listener Listener) Emitter {
 	e.mu.Lock()
@@ -273,6 +328,16 @@ func (e *emitter) Once(evt interface{}, listener Listener) Emitter {
 
 	e.On(evt, run)
 	return e
+}
+
+// Subscrie 订阅事件
+func (e *emitter) Subscribe(evt interface{}, listener Listener) Emitter {
+	return e.On(evt, listener)
+}
+
+// SubscrieOnce 订阅一次性事件
+func (e *emitter) SubscribeOnce(evt interface{}, listener Listener) Emitter {
+	return e.Once(evt, listener)
 }
 
 // Off 移除指定事件监听器
@@ -305,6 +370,16 @@ func (e *emitter) OffAll(evt interface{}) Emitter {
 	}
 
 	return e
+}
+
+// Unsubscribe 取消事件订间
+func (e *emitter) Unsubscribe(evt interface{}, listener Listener) Emitter {
+	return e.Off(evt, listener)
+}
+
+// UnsubscribeAll 取消指定事件所有监听器
+func (e *emitter) UnsubscribeAll(evt interface{}) Emitter {
+	return e.OffAll(evt)
 }
 
 // Clear 清除所有事件及监听器
@@ -471,7 +546,9 @@ func (e *emitter) callFunc(evt interface{}, fn reflect.Value, arguments ...inter
 	// func actual argumnets
 	var fnArguments []reflect.Value = make([]reflect.Value, fnArgNum)
 
-	log.Printf("arg.values=%v\n", values)
+	if EnableWarning {
+		log.Printf("arg.values=%v\n", values)
+	}
 	// variable args
 	if fn.Type().IsVariadic() {
 		variableArgs := make([]reflect.Value, len(values))
@@ -495,7 +572,9 @@ func (e *emitter) callFunc(evt interface{}, fn reflect.Value, arguments ...inter
 			}
 		}
 	}
-	log.Printf("fn.argumnets=%v\n", fnArguments)
+	if EnableWarning {
+		log.Printf("fn.argumnets=%v\n", fnArguments)
+	}
 	// if fn.Type().IsVariadic() {
 	// 	fnArguments = values
 	// 	// fn.Call(values)
