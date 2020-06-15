@@ -73,6 +73,14 @@ func ToTime(i interface{}, format ...string) time.Time {
 	switch value := i.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		t := ToInt64(i)
+		if t/1e18 > 0 { // nanoseconds
+			return time.Unix(t/1e9, t%1e9)
+		} else if t/1e15 > 0 { // microsecond
+			return time.Unix(t/1e6, t%1e6*1e3)
+		} else if t/1e12 > 0 { // millisecond
+			return time.Unix(t/1e3, t%1e3*1e6)
+		}
+		// second
 		return time.Unix(t, 0)
 	case string:
 		var t time.Time

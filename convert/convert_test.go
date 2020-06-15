@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/teamlint/gox/timex"
 )
 
 func TestRound(t *testing.T) {
@@ -56,4 +57,25 @@ func TestConvert(t *testing.T) {
 	timestr := "2016-11-30T12:15:53"
 	jsonTime := ToTime(timestr, "2006-01-02T15:04:05")
 	t.Log(jsonTime)
+	now := ToTime("2020-06-15 10:43:29.168542123")
+	// nanosecond
+	ns := 1592189009168542123
+	t.Log("nanosecond ", ToTime(ns))
+	assert.Equal(t, now.UnixNano(), ToTime(ns).UnixNano())
+	// microsecond
+	mis := 1592189009168542
+	t.Log("microsecond ", ToTime(mis))
+	assert.Equal(t, now.Unix(), ToTime(mis).Unix())
+	// millisecond
+	ms := 1592189009168
+	t.Log("millisecond ", ToTime(ms))
+	assert.Equal(t, now.Unix(), ToTime(ms).Unix())
+	// second
+	epoch := 1592189009
+	t.Log("second ", ToTime(epoch))
+	assert.Equal(t, now.Unix(), ToTime(epoch).Unix())
+	jsJsonTime := "2020-06-15T10:43:29.168Z"
+	t.Log("jsJSON time", ToTime(jsJsonTime))
+	assert.Equal(t, ToInt64(ms), timex.Timestamp(ToTime(jsJsonTime)))
+
 }
