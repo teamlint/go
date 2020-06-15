@@ -16,6 +16,9 @@ const (
 	DateFormat = "2006-01-02"
 	// TimeFormat 默认时间格式
 	TimeFormat = "15:04:05"
+	// RFC3339Z   = "2006-01-02T15:04:05.999Z"
+	RFC3339Z  = "2006-01-02T15:04:05.999Z"
+	RFC3339NZ = "2006-01-02T15:04:05.999"
 )
 
 var (
@@ -23,6 +26,8 @@ var (
 	TimeFormats = []string{
 		DateFormat,
 		DatetimeFormat,
+		RFC3339Z,
+		RFC3339NZ,
 		time.ANSIC,
 		time.UnixDate,
 		time.RubyDate,

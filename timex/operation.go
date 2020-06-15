@@ -49,3 +49,8 @@ func StartOfMonth(date time.Time) time.Time {
 func EndOfMonth(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month()+1, 0, 0, 0, 0, 0, date.Location())
 }
+
+// Timestamp 返回自UTC 1970-01-01起经过的毫秒数
+func Timestamp(date time.Time) int64 {
+	return int64(date.UnixNano()) / 1e6
+}
