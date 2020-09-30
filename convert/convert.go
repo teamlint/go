@@ -138,7 +138,7 @@ func ToString(i interface{}) string {
 	case int32:
 		return strconv.Itoa(int(value))
 	case int64:
-		return strconv.Itoa(int(value))
+		return strconv.FormatInt(int64(value), 10)
 	case uint:
 		return strconv.FormatUint(uint64(value), 10)
 	case uint8:
